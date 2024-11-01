@@ -1,22 +1,27 @@
 package Vue.Serveur.InterfaceGraphique;
 
 import Modèle.BasesdeDonnées.Logger;
+import Modèle.Protocole.Protocole;
+import Modèle.Protocole.UsineProtocole;
+import Modèle.Threads.ServeurThread;
+import Modèle.Threads.ServeurThreadDemande;
+import Modèle.Threads.ServeurThreadPOOL;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 
 public class ServeurBSPP extends JFrame implements Logger
 {
+    ServeurThread serveurThread;
     private JButton DemarrerButton;
     private JCheckBox DemandeCheckbox;
 
-    // Getter pour le bouton "Démarrer"
     public JButton getDemarrerButton()
     {
         return DemarrerButton;
     }
 
-    // Getter pour la checkbox "Demande"
     public JCheckBox getDemandeCheckbox()
     {
         return DemandeCheckbox;
@@ -31,7 +36,6 @@ public class ServeurBSPP extends JFrame implements Logger
 
     private static ServeurBSPP instance;
 
-    // Singleton pour obtenir l'instance unique de ServeurBSPP
     public static ServeurBSPP getServeurBSPP()
     {
         if (instance == null)
@@ -52,16 +56,15 @@ public class ServeurBSPP extends JFrame implements Logger
         TopPanel = new JPanel();
         TopPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
-        // Initialisation des composants
         DemarrerButton = new JButton("Démarrer");
         DemandeCheckbox = new JCheckBox("Demande");
 
-        // Ajout des composants au panneau supérieur
         TopPanel.add(DemarrerButton);
         TopPanel.add(DemandeCheckbox);
 
-        // Ajout du panneau supérieur au JFrame
         this.add(TopPanel, BorderLayout.NORTH);
+
+        DemarrerButton.addActionListener(e -> Demarrer(DemandeCheckbox.isSelected()));
     }
 
     // Méthode pour afficher un message
@@ -70,10 +73,34 @@ public class ServeurBSPP extends JFrame implements Logger
         JOptionPane.showMessageDialog(this, message);
     }
 
-    // Action pour le bouton "Démarrer"
-    public void Demarrer()
+    public void Demarrer(boolean Demande)
     {
         ShowMessage("Le serveur démarre...");
+
+        int PORT = 5678;
+
+        try
+        {
+            Protocole protocole = UsineProtocole.RecupererProtocole(null);
+            if(Demande)
+            {
+                System.out.println("Nom du protocole : " + protocole.RecupererNom());
+                serveurThread = new ServeurThreadDemande(PORT, protocole, this);
+            }
+
+            else
+            {
+                int taillePOOL = 15;
+                serveurThread = new ServeurThreadPOOL(PORT, protocole, taillePOOL, this);
+            }
+
+            serveurThread.start();
+        }
+
+        catch(NumberFormatException | IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
